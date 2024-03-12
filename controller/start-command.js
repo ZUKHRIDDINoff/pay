@@ -14,7 +14,7 @@ async function start(ctx) {
             create_dt: Date.now()
         }
         
-    })
+    }).catch(err => console.log(err))
 
     const message = `Добро пожаловать, {username}\nFovPay — это бот-кошелёк для получения, отправки, покупки и хранения криптовалюты в Telegram.`
     const parsedMessage = includeUsername(ctx, message);

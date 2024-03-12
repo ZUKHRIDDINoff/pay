@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import axios from 'axios';
-import 'dotenv/config';
+import constants from '../config/default.js';
 
 import { PaymentCurrenciesModel } from '../models/index.js';
 
@@ -9,13 +9,13 @@ async function getListServices(){
 
     const sign = crypto
         .createHash("md5")
-        .update(Buffer.from(JSON.stringify(data)).toString('base64') + process.env.API_KEY).digest('hex');
+        .update(Buffer.from(JSON.stringify(data)).toString('base64') + constants.cryptomus.payment_api_key).digest('hex');
 
     const response = await axios.post('https://api.cryptomus.com/v1/payment/services',
     data,
     {
         headers: {
-            merchant: process.env.MERCHANT_ID,
+            merchant: constants.cryptomus.merchant_id,
             sign
         }
     }

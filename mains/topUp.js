@@ -1,21 +1,21 @@
-import crypto from "crypto"
-import axios from 'axios'
-import  "dotenv/config";
+import crypto from "crypto";
+import axios from 'axios';
 import Controller from "../controller/index.js";
-console.log(3,process.env.API_KEY);
+import constants from "../config/default.js";
+
 async function generateAdress(ctx, token, orderId){
     const data = {
         currency: token.slug,
         network: token.network,
         order_id: orderId,
-        url_callback: `${process.env.WEBHOOK_URL}/payment_callback`
+        url_callback: `${constants.server.webhook}/payment_callback`
     }
 
 
 
     const sign = crypto
         .createHash("md5")
-        .update(Buffer.from(JSON.stringify(data)).toString('base64') + process.env.API_KEY)
+        .update(Buffer.from(JSON.stringify(data)).toString('base64') + constants.cryptomus.payment_api_key)
         .digest('hex');
 
     console.log("top_up sign: " + sign);
@@ -24,7 +24,7 @@ async function generateAdress(ctx, token, orderId){
     data,
     {
         headers: {
-            merchant: process.env.MERCHANT_ID,
+            merchant: constants.cryptomus.merchant_id,
             sign
         }
     }
@@ -47,14 +47,14 @@ async function generateQrCode(uuid){
 
     const sign = crypto
         .createHash("md5")
-        .update(Buffer.from(JSON.stringify(data)).toString('base64') + process.env.API_KEY)
+        .update(Buffer.from(JSON.stringify(data)).toString('base64') + constants.cryptomus.payment_api_key)
         .digest('hex');
 
     const response = await axios.post('https://api.cryptomus.com/v1/wallet/qr',
     data,
     {
         headers: {
-            merchant: process.env.MERCHANT_ID,
+            merchant: constants.cryptomus.merchant_id,
             sign
         }
     }

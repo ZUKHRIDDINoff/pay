@@ -1,11 +1,14 @@
 import { Sequelize, DataTypes } from "sequelize";
+import constants from "../config/default.js";
+
+const { database } = constants;
 
 const sequelize = new Sequelize(
-    'zrd_pay',
-    'root',
-    'newPass123!',
+    database.name,
+    database.user,
+    database.password,
      {
-       host: 'localhost',
+       host: database.host,
        dialect: 'mysql',
        logging: false
     }

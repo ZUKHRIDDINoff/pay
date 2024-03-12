@@ -2,7 +2,7 @@ import Sequelize from 'sequelize'
 
 import sequelize from "./db.js"
 
-const UserPaymentWallets = sequelize.define("user_payment_wallet", {
+const UserPaymentWallet = sequelize.define("user_payment_wallet", {
     id: {
         type: Sequelize.INTEGER(11),
         autoIncrement: true,
@@ -36,7 +36,7 @@ const UserPaymentWallets = sequelize.define("user_payment_wallet", {
     update_dt: {
         type:  Sequelize.DATE,
     }
-}, { timestamps: false });
+}, { timestamps: false, freezeTableName: true });
 
 // AdvertisementModel.getActiveList = function() {
 //     return this.findAll({ 
@@ -49,17 +49,23 @@ const UserPaymentWallets = sequelize.define("user_payment_wallet", {
 //         raw: true,
 //     });
 // };
-UserPaymentWallets.updateProperties = async function(properties = {}) {
+UserPaymentWallet.updateProperties = async function(properties = {}) {
     return await this.update(properties);
 };
 
-UserPaymentWallets.getUserWallets = async function(userId) {
+UserPaymentWallet.getUserWallets = async function(userId) {
     return this.findAll({ where: { user_id: userId } })
 }
 
 
-UserPaymentWallets.getAllWallets = async function() {
+UserPaymentWallet.getAllWallets = async function() {
     return this.findAll();
 }
 
-export default UserPaymentWallets;
+UserPaymentWallet.findWallet = async function(walletId) {
+    return this.findOne({ where: {
+        wallet_id: walletId
+    } })
+};
+
+export default UserPaymentWallet;

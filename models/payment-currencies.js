@@ -34,7 +34,7 @@ const PaymentCurrenciesModel = sequelize.define("payment_currencies", {
     comission: {
         type: Sequelize.JSON
     }
-}, { timestamps: false });
+}, { timestamps: false, freezeTableName: true });
 
 // AdvertisementModel.getActiveList = function() {
 //     return this.findAll({ 

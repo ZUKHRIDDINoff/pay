@@ -1,4 +1,4 @@
-import { PaymentCurrenciesModel, UserPaymentWallets, UserModel } from "../models/index.js";
+import { PaymentCurrenciesModel, UserPaymentWallet, UserModel } from "../models/index.js";
 
 async function wallet(ctx) {
     const { from: { id: userId } } = ctx.update.callback_query;

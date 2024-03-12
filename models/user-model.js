@@ -38,7 +38,7 @@ const UserModel = sequelize.define("user_model", {
     update_dt: {
         type:  Sequelize.DATE,
     }
-}, { timestamps: false });
+}, { timestamps: false, freezeTableName: true });
 
 // AdvertisementModel.getActiveList = function() {
 //     return this.findAll({ 
@@ -53,6 +53,12 @@ const UserModel = sequelize.define("user_model", {
 // };
 UserModel.updateProperties = async function(properties = {}) {
     return await this.update(properties);
+};
+
+UserModel.findUser = async function(userId) {
+    return this.findOne({ where: {
+        user_id: userId
+    } })
 };
 
 export default UserModel;

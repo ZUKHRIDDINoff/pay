@@ -1,16 +1,16 @@
 import PaymentCurrenciesModel from "./payment-currencies.js";
-import UserPaymentWallets from "./user-payment-wallet.js";
+import UserPaymentWallet from "./user-payment-wallet.js";
 import UserModel from "./user-model.js";
 import PaymentTransactions from "./payment-transactions.js"; 
 
-UserPaymentWallets.belongsTo(PaymentCurrenciesModel, {
+UserPaymentWallet.belongsTo(PaymentCurrenciesModel, {
     foreignKey: "id",
     targetKey: "id"
 });
 
 export {
     PaymentCurrenciesModel,
-    UserPaymentWallets,
+    UserPaymentWallet,
     UserModel,
     PaymentTransactions
 }

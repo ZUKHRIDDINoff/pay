@@ -1,91 +1,105 @@
-import crypto from 'crypto'
 import { Telegraf } from "telegraf";
+import express from "express";
+import crypto from "crypto";
 
-import { generateAdress, generateQrCode } from "../mains/index.js";
-import Contoller from "../controller/index.js";
-import { PaymentCurrenciesModel, UserPaymentWallets } from "../models/index.js";
+import { UserPaymentWallet, UserModel, PaymentTransactions } from "../models/index.js";
+import constants from "../config/default.js";
 
-const bot = new Telegraf('6469165118:AAG1qTb8KcQIPdzk3xvFJPuDAcmC9jBcIGI');
+import  "dotenv/config";
+import "../bot.js";
+import "../models/db.js";
 
-bot.start(ctx => Contoller.start(ctx)); 
+const bot = new Telegraf(constants.bot.token);
+const port = constants.server.port || 8080;
 
+const app = express();
 
-bot.on("callback_query", async ctx => {
-    const { data } = ctx.update.callback_query;
-    const func = data.split(":");
-
-    if(data == "top_up&&choose_crypto") {
-        return Contoller.topUp(ctx);
-    } else if(data == "wallet") {
-        return Contoller.start(ctx);
+// Enable body parser middleware
+app.use(express.json({
+    verify: (req, res, buf) => {
+    req.rawBody = buf.toString()
     }
+}));
 
-    if(func[0] == "top_up&&choose_network") {
-        const res = await Contoller.chooseNetwork(ctx, func[1]).catch(err => console.log(err));
-    }else if(func[0] == "my_wallet") {
-        return Contoller.wallet(ctx);
-    } else if( func[0] == "top_up&&genAdrs" ) {
-        const cryptoToken = await PaymentCurrenciesModel.findOne({ where: { id: func[1] } })
-        const cryptoNetwork = cryptoToken.dataValues.network;
-        
-        let userWallet = await UserPaymentWallets.findOne({ where: { 
-            user_id: ctx.update.callback_query.from.id,
-            currency_id: cryptoToken.dataValues.id,
-         } }).catch(err => console.log(err))
-        
-        if(!userWallet) {
-            const orderId = crypto.randomBytes(12).toString('hex')
-            const newWalletAddress = await generateAdress(ctx, cryptoToken.dataValues, orderId);
-            if(!newWalletAddress || !newWalletAddress.data) return
-            const qrImage = await generateQrCode(newWalletAddress.data.result.uuid);
-            userWallet = await UserPaymentWallets.create({
-                user_id: ctx.update.callback_query.from.id,
-                wallet_address: newWalletAddress.data.result.address,
-                qr_code: qrImage.data.result.image,
-                currency_id: cryptoToken.dataValues.id,
-                wallet_id: orderId,
-                payment_url: newWalletAddress.data.result.url,
-                wallet_optional_id: newWalletAddress.data.result.wallet_uuid,
-                create_dt: Date.now(),
-                update_dt: Date.now()
-            }).catch(err => console.log(err))
-        }
-    `newWalletAddress.data.result.wallet_uuid`
-        const base64Image = userWallet.dataValues.qr_code.split(",")[1]; // Replace with your actual base64 image
-        
-        // Convert base64 image to buffer
-        const imageBuffer = Buffer.from(base64Image, 'base64');
-        
-        const message = `Используйте адрес ниже или QR-код для пополнения баланса.
-
-Монета: ${cryptoToken.dataValues.name} 
-Сеть: ${cryptoNetwork} ‼️
-
-<code><i>${userWallet.wallet_address}</i></code>
-
-${userWallet.payment_url}
-    
-Мин. сумма пополнения: ${JSON.parse(cryptoToken.dataValues.limit).min_amount} ${cryptoToken.dataValues.slug}
-
-⚠️ Отправляйте только ${cryptoToken.dataValues.name} через сеть ${cryptoNetwork}, иначе монеты будут утеряны. Вы должны отправить не менее ${JSON.parse(cryptoToken.dataValues.limit).min_amount} ${cryptoToken.dataValues.slug} или больше для внесения депозита.`
-    // Send the image
-    await ctx.replyWithPhoto({ source: imageBuffer }, { caption: message, parse_mode: 'HTML', reply_markup: { 
-        inline_keyboard: [
-            [
-                {
-                    text: "‹ Назад", callback_data: `top_up&&choose_crypto`
-                }
-            ]
-        ]
-     } });
-    ctx.deleteMessage();
-
-    }
-    else {
-        console.log("Nothing");
-    }
+app.get('/health', async(req, res) => {
+    return res.sendStatus(200);
 })
-bot.launch()
 
-process.once('SIGINT', () => bot.stop('SIGINT'))
-process.once('SIGTERM', () => bot.stop('SIGTERM'))
+app.post('/payment_callback', async(req, res) => {
+    const { 
+        body: { 
+            sign, 
+            status: paymentStatus, 
+            order_id: orderId,
+            payment_amount_usd: paymentAmountUSD
+        },
+        headers: { 
+            "x-forwarded-for": cryptomusIpAdress
+        }
+    } = req;
+    console.log(11, paymentStatus);
+    console.log(5, req.body);
+    console.log(6, req.rawBody);
+    // Проверим ip адрес криптомуса
+    if(cryptomusIpAdress != constants.cryptomus.ip_address) {
+        return res.status(400).send("Invalild ip address")
+    };
+
+    // Проверим есть ли sign
+    if(!sign) {
+        return res.status(400).send("Invalid payload")
+    };
+
+    // Проверим статусы
+    if(!constants.cryptomus.valid_statuses.split(',').includes(paymentStatus)) {
+        return res.status(400).send("Invalid payment status")
+    };
+
+    const data = JSON.parse(req.rawBody);
+    console.log(9,data);
+
+    delete data.sign;
+    const jsonData = JSON.stringify(data).replace(/\//mg, "\\/");
+    console.log(1212, jsonData);
+    const hash = crypto
+            .createHash("md5")
+            .update(Buffer.from(jsonData).toString('base64') + constants.cryptomus.payment_api_key)
+            .digest('hex');
+
+    // Проверим sign
+    if(hash !== sign) {
+        console.log('here 3');
+        return res.status(400).send("Invalid sign");
+    }
+
+    // Ищем пользователя и добавим новую транзакцию
+    const userPayWallet = await UserPaymentWallet.findWallet(orderId);
+    if(!userPayWallet) return;
+
+    const { 
+        user_id: userId,
+        wallet_id: walletId,
+    } = userPayWallet;
+
+    const newTrans = await PaymentTransactions.createTransaction(userId, walletId, req.body);
+
+    // Ищем пользователя в базе данных и увеличиваем баланс пользователя
+    const user = await UserModel.findUser(userId);
+    user.balance_usd += parseFloat(paymentAmountUSD);
+    user.save();
+
+    if(paymentStatus == "paid") {
+        bot.telegram.sendMessage(userId, `💵 Вы внесли на счёт ${paymentAmountUSD} USD`)
+    }
+
+    res.sendStatus(200);
+})
+
+app.get('/', async(req, res) => {
+    res.send('xaxa');
+})
+
+// Start the Express server
+app.listen(port, () => {
+    console.log(`Server is running on port ${constants.server.webhook} PORT:${port}`);
+});
