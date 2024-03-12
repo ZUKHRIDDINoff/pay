@@ -5,7 +5,6 @@ import crypto from "crypto";
 import { UserPaymentWallet, UserModel, PaymentTransactions } from "../models/index.js";
 import constants from "../config/default.js";
 
-import  "dotenv/config";
 import "../bot.js";
 import "../models/db.js";
 
@@ -37,9 +36,7 @@ app.post('/payment_callback', async(req, res) => {
             "x-forwarded-for": cryptomusIpAdress
         }
     } = req;
-    console.log(11, paymentStatus);
-    console.log(5, req.body);
-    console.log(6, req.rawBody);
+
     // Проверим ip адрес криптомуса
     if(cryptomusIpAdress != constants.cryptomus.ip_address) {
         return res.status(400).send("Invalild ip address")
@@ -56,11 +53,9 @@ app.post('/payment_callback', async(req, res) => {
     };
 
     const data = JSON.parse(req.rawBody);
-    console.log(9,data);
-
     delete data.sign;
+
     const jsonData = JSON.stringify(data).replace(/\//mg, "\\/");
-    console.log(1212, jsonData);
     const hash = crypto
             .createHash("md5")
             .update(Buffer.from(jsonData).toString('base64') + constants.cryptomus.payment_api_key)
