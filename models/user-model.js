@@ -40,17 +40,6 @@ const UserModel = sequelize.define("user_model", {
     }
 }, { timestamps: false, freezeTableName: true });
 
-// AdvertisementModel.getActiveList = function() {
-//     return this.findAll({ 
-//         where: {
-//             [Op.or]: [
-//                 { status: 10, startDT: { [Sequelize.Op.lte]: new Date() } },
-//                 { isDefault: 1 },
-//             ],
-//         },
-//         raw: true,
-//     });
-// };
 UserModel.updateProperties = async function(properties = {}) {
     return await this.update(properties);
 };
@@ -60,5 +49,31 @@ UserModel.findUser = async function(userId) {
         user_id: userId
     } })
 };
+
+UserModel.findOrCreateUser = async function(user) {
+    const { id: userId, first_name: firstName, last_name: lastName = null, username: userName = null} = user;
+
+    return this.findOrCreate({
+        where: {
+            user_id: userId
+        },
+        defaults: {
+            first_name: firstName,
+            last_name: lastName,
+            username: userName,
+            create_dt: Date.now()
+        }
+        
+    })
+}
+
+UserModel.addUSDToWallet = async function(userId, paymentAmountUSD) {
+    const sqlQuery = `
+    UPDATE user_model 
+    SET balance_usd = balance_usd + ${paymentAmountUSD}
+    WHERE user_id = ${userId};`
+    const a = await sequelize.query(sqlQuery, { type: sequelize.QueryTypes.UPDATE });
+    console.log(a);
+}
 
 export default UserModel;

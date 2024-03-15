@@ -28,7 +28,7 @@ const UserPaymentWallet = sequelize.define("user_payment_wallet", {
         type: Sequelize.STRING(50)
     },
     qr_code: {
-        type: Sequelize.STRING(2000)
+        type: Sequelize.STRING(10000)
     },
     create_dt: {
         type: Sequelize.DATE,
@@ -38,17 +38,6 @@ const UserPaymentWallet = sequelize.define("user_payment_wallet", {
     }
 }, { timestamps: false, freezeTableName: true });
 
-// AdvertisementModel.getActiveList = function() {
-//     return this.findAll({ 
-//         where: {
-//             [Op.or]: [
-//                 { status: 10, startDT: { [Sequelize.Op.lte]: new Date() } },
-//                 { isDefault: 1 },
-//             ],
-//         },
-//         raw: true,
-//     });
-// };
 UserPaymentWallet.updateProperties = async function(properties = {}) {
     return await this.update(properties);
 };
@@ -62,10 +51,18 @@ UserPaymentWallet.getAllWallets = async function() {
     return this.findAll();
 }
 
-UserPaymentWallet.findWallet = async function(walletId) {
+UserPaymentWallet.findWalletById = async function(walletId) {
     return this.findOne({ where: {
         wallet_id: walletId
     } })
 };
+
+UserPaymentWallet.findWalletByProperties = async function(properties = {}) {
+    return this.findOne({ where: properties })
+};
+
+UserPaymentWallet.createWallet = async function(wallet) {
+    return this.create(wallet);
+}
 
 export default UserPaymentWallet;

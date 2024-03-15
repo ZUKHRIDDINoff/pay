@@ -3,6 +3,7 @@ import express from "express";
 import crypto from "crypto";
 
 import { UserPaymentWallet, UserModel, PaymentTransactions } from "../models/index.js";
+import { updateServices } from "../mains/index.js";
 import constants from "../config/default.js";
 
 import "../bot.js";
@@ -13,17 +14,18 @@ const port = constants.server.port || 8080;
 
 const app = express();
 
-// Enable body parser middleware
 app.use(express.json({
     verify: (req, res, buf) => {
     req.rawBody = buf.toString()
     }
 }));
 
+//Проверим, работает ли сервер
 app.get('/health', async(req, res) => {
     return res.sendStatus(200);
 })
 
+// Проверим наполнение счета
 app.post('/payment_callback', async(req, res) => {
     const { 
         body: { 
@@ -44,11 +46,13 @@ app.post('/payment_callback', async(req, res) => {
 
     // Проверим есть ли sign
     if(!sign) {
+        console.log(1);
         return res.status(400).send("Invalid payload")
     };
 
     // Проверим статусы
     if(!constants.cryptomus.valid_statuses.split(',').includes(paymentStatus)) {
+        console.log(2);
         return res.status(400).send("Invalid payment status")
     };
 
@@ -63,12 +67,12 @@ app.post('/payment_callback', async(req, res) => {
 
     // Проверим sign
     if(hash !== sign) {
-        console.log('here 3');
+        console.log(3);
         return res.status(400).send("Invalid sign");
     }
 
     // Ищем пользователя и добавим новую транзакцию
-    const userPayWallet = await UserPaymentWallet.findWallet(orderId);
+    const userPayWallet = await UserPaymentWallet.findWalletById(orderId);
     if(!userPayWallet) return;
 
     const { 
@@ -79,10 +83,8 @@ app.post('/payment_callback', async(req, res) => {
     const newTrans = await PaymentTransactions.createTransaction(userId, walletId, req.body);
 
     // Ищем пользователя в базе данных и увеличиваем баланс пользователя
-    const user = await UserModel.findUser(userId);
-    user.balance_usd += parseFloat(paymentAmountUSD);
-    user.save();
-
+    await UserModel.addUSDToWallet(userId,paymentAmountUSD).catch(err => console.log(err))
+    
     if(paymentStatus == "paid") {
         bot.telegram.sendMessage(userId, `💵 Вы внесли на счёт ${paymentAmountUSD} USD`)
     }
@@ -90,8 +92,18 @@ app.post('/payment_callback', async(req, res) => {
     res.sendStatus(200);
 })
 
-app.get('/', async(req, res) => {
-    res.send('xaxa');
+// Обновить токены с сервера
+app.post('/updateToken', async(req, res) => {
+    const { secret } = req.body;
+    const sercretWord = constants.server.updateTokensSecret;
+
+    // Проверим правильность входящего секретного слова
+    if(secret !== sercretWord) return;
+
+    // Обновим crypto services в базе данных
+    await updateServices();
+
+    return res.sendStatus(200)
 })
 
 // Start the Express server

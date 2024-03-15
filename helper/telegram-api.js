@@ -1,23 +1,17 @@
-exports.sendMessage = (chatId, message, extra = {}) => {
+import constants from "../config/default.js";
+import axios from "axios"
+
+function sendMessage(chatId, message, extra = {}) {
     const queryProps = createQueryProperties(chatId, extra, { text: message });
-    const url = createBaseURL(token, "sendMessage");
+    const url = createBaseURL(constants.bot.token, "sendMessage");
     return apiRequestPOST(url, queryProps);
 };
 
-exports.sendPhoto = (token, chatId, fileId, extra = {}) => {
+function sendPhoto(chatId, fileId, extra = {}) {
     const queryProps = createQueryProperties(chatId, extra, { photo: fileId });
-    const url = createBaseURL(token, "sendPhoto");
+    const url = createBaseURL(constants.bot.token, "sendPhoto");
     return apiRequestPOST(url, queryProps);
 };
-
-exports.sendVideo = (token, chatId, fileId, extra = {}) => {
-    const queryProps = createQueryProperties(chatId, extra, { video: fileId });
-    const url = createBaseURL(token, "sendVideo");
-    return apiRequestPOST(url, queryProps);
-};
-
-
-
 
 // ====================================================
 // Base Metohds For Telegram API
@@ -43,8 +37,7 @@ async function apiRequestPOST(url, data) {
     }
 }
 
-async function apiBaseRequestPOST(url, data) {
-    const response = await axios.post(url, data);
-
-    return response.data;
+export {
+    sendMessage,
+    sendPhoto
 }

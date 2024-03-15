@@ -3,24 +3,20 @@ import axios from 'axios';
 import Controller from "../controller/index.js";
 import constants from "../config/default.js";
 
-async function generateAdress(ctx, token, orderId){
+async function generateAdress(ctx, cryptoToken, orderId){
     const data = {
-        currency: token.slug,
-        network: token.network,
+        currency: cryptoToken.slug,
+        network: cryptoToken.network,
         order_id: orderId,
         url_callback: `${constants.server.webhook}/payment_callback`
     }
-
-
 
     const sign = crypto
         .createHash("md5")
         .update(Buffer.from(JSON.stringify(data)).toString('base64') + constants.cryptomus.payment_api_key)
         .digest('hex');
-
-    console.log("top_up sign: " + sign);
     
-    const response = await axios.post('https://api.cryptomus.com/v1/wallet',
+    const response = await axios.post(constants.cryptomus.wallet,
     data,
     {
         headers: {
@@ -29,9 +25,8 @@ async function generateAdress(ctx, token, orderId){
         }
     }
     
-    ).catch(err => {
-        console.log(err);
-        return Controller.errorServiceNotFound(ctx, token.network);
+    ).catch(() => {
+        return Controller.errorServiceNotFound(ctx, cryptoToken.network);
     })
     return response
 };
@@ -39,30 +34,33 @@ async function generateAdress(ctx, token, orderId){
 
 
 async function generateQrCode(uuid){
-    const data = {
-        wallet_address_uuid: uuid
-    }
-
-    
-
-    const sign = crypto
-        .createHash("md5")
-        .update(Buffer.from(JSON.stringify(data)).toString('base64') + constants.cryptomus.payment_api_key)
-        .digest('hex');
-
-    const response = await axios.post('https://api.cryptomus.com/v1/wallet/qr',
-    data,
-    {
-        headers: {
-            merchant: constants.cryptomus.merchant_id,
-            sign
+    try {
+        const data = {
+            wallet_address_uuid: uuid
         }
-    }
     
-    ).catch(err => console.log(err.response.data))
-    return response
+        const sign = crypto
+            .createHash("md5")
+            .update(Buffer.from(JSON.stringify(data)).toString('base64') + constants.cryptomus.payment_api_key)
+            .digest('hex');
+    
+        const response = await axios.post(constants.cryptomus.qr,
+        data,
+        {
+            headers: {
+                merchant: constants.cryptomus.merchant_id,
+                sign
+            }
+        }
+        
+        )
+        return response
+    } catch (error) {
+        console.log(error);
+    }
 };
 
-export { generateAdress,
-         generateQrCode 
-        };
+export { 
+    generateAdress,
+    generateQrCode 
+};

@@ -59,18 +59,6 @@ const PaymentTransactions = sequelize.define("payment_transactions", {
     
 }, { timestamps: false, freezeTableName: true });
 
-// AdvertisementModel.getActiveList = function() {
-//     return this.findAll({ 
-//         where: {
-//             [Op.or]: [
-//                 { status: 10, startDT: { [Sequelize.Op.lte]: new Date() } },
-//                 { isDefault: 1 },
-//             ],
-//         },
-//         raw: true,
-//     });
-// };
-
 PaymentTransactions.getTokens = async function() {
     return this.findAll();
 }

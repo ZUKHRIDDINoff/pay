@@ -36,23 +36,31 @@ const PaymentCurrenciesModel = sequelize.define("payment_currencies", {
     }
 }, { timestamps: false, freezeTableName: true });
 
-// AdvertisementModel.getActiveList = function() {
-//     return this.findAll({ 
-//         where: {
-//             [Op.or]: [
-//                 { status: 10, startDT: { [Sequelize.Op.lte]: new Date() } },
-//                 { isDefault: 1 },
-//             ],
-//         },
-//         raw: true,
-//     });
-// };
 PaymentCurrenciesModel.updateProperties = async function(properties = {}) {
-    return await this.update(properties);
+    return this.update(properties);
 };
 
 PaymentCurrenciesModel.getTokens = async function() {
-    return this.findAll();
+    return this.findAll({
+        attributes: ['slug'],
+        group: ['slug'],
+    }).then(tokens => tokens.map(token => token.slug));
+}
+
+PaymentCurrenciesModel.getAllNetworks = function(tokenName) {
+    return this.findAll({
+        where: {
+            slug: tokenName
+        }
+    })
+}
+
+PaymentCurrenciesModel.findTokenById = function(id) {
+    return this.findOne({
+        where: {
+            id
+        }
+    })
 }
 
 export default PaymentCurrenciesModel;

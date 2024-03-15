@@ -11,7 +11,7 @@ async function getListServices(){
         .createHash("md5")
         .update(Buffer.from(JSON.stringify(data)).toString('base64') + constants.cryptomus.payment_api_key).digest('hex');
 
-    const response = await axios.post('https://api.cryptomus.com/v1/payment/services',
+    const response = await axios.post(constants.cryptomus.services,
     data,
     {
         headers: {
@@ -27,8 +27,7 @@ async function getListServices(){
 
 async function updateServices() {
     const servicesList = await getListServices();
-    // console.log(servicesList);
-    // console.log(122, servicesList.result);
+
     servicesList.result.map(async el => {
         const token = await PaymentCurrenciesModel.findOne({ where: { name: el.currency }});
 
