@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "./bot/startBot.js",
+  "main": "bot/startBot.js",
   "scripts": {
-    "start": "node ./bot/startBot.js",
-    "dev": "nodemon ./bot/startBot.js"
+    "start": "node /bot/startBot.js",
+    "dev": "nodemon /bot/startBot.js"
   },
   "keywords": [],
   "author": "zrdme",
